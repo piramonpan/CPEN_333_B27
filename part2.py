@@ -1,6 +1,6 @@
 # Group #:
 # Student names:
- 
+
 import threading
 import queue
 import time, random
@@ -21,7 +21,7 @@ def producerWorker(queue : queue.Queue):
 
     def waitForItemToBeProduced() -> int: #inner function; use as is
         time.sleep(round(random.uniform(.1, .3), 2)) #a random delay (100 to 300ms)
-        return random.randint(1, 99) #an item is produced
+        return random.randint(1, 50) #an item is produced
     
     for _ in range(SIZE * 2):
         item = waitForItemToBeProduced()
@@ -40,9 +40,9 @@ if __name__ == "__main__":
     producer_threads : list[threading.Thread] = []
     consumer_threads : list[threading.Thread] = []
 
-    for _ in range(5):
-        producer_threads.append(threading.Thread(target=producerWorker, args=(buffer,)))
     for _ in range(4):
+        producer_threads.append(threading.Thread(target=producerWorker, args=(buffer,)))
+    for _ in range(5):
         consumer_threads.append(threading.Thread(target=consumerWorker, args=(buffer,), daemon=True))
 
     for i in producer_threads:
@@ -52,7 +52,5 @@ if __name__ == "__main__":
         
     for i in producer_threads:
         i.join()
-    for j in consumer_threads:
-        j.join()
 
     print("All items produced and consumed succesfully")

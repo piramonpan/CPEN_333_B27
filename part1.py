@@ -106,6 +106,7 @@ class Game():
         """
         self.queue = gameQueue
         self.score = 0
+
         #starting length and location of the snake
         #note that it is a list of tuples, each being an
         # (x, y) tuple. Initially its size is 5 tuples.       
@@ -115,11 +116,6 @@ class Game():
         self.direction = "Left"
         self.gameNotOver = True
         self.createNewPrey()
-        
-        #PAN : Testing Purposes 
-        #Can replace with self.createNewPrey() when implemented
-        self.rectangleCoordinates = [300,50, 310, 55]
-        self.queue.put_nowait({"prey" : self.rectangleCoordinates})
 
     def superloop(self) -> None:
         """
@@ -169,6 +165,7 @@ class Game():
         """
         # generate new snake coordinate
         NewSnakeCoordinates = self.calculateNewCoordinates()
+        # put the coordinate in front of the snake 
         self.snakeCoordinates.insert(0, NewSnakeCoordinates)
 
         # If based on this new movement, the prey has been captured, 
@@ -177,7 +174,8 @@ class Game():
         PREY_WIDTH = 5
         snake_half = SNAKE_ICON_WIDTH / 2
 
-        prey = (self.rectangleCoordinates[0], self.rectangleCoordinates[1], PREY_WIDTH)
+        prey_coordinates = gui.canvas.coords(gui.preyIcon)
+        prey = (prey_coordinates[0], prey_coordinates[1], PREY_WIDTH)
         snake = (self.snakeCoordinates[0][0] - snake_half, self.snakeCoordinates[0][1] - snake_half, SNAKE_ICON_WIDTH)
 
         def is_box_inside(inner : tuple, outer : tuple) -> bool:
@@ -195,20 +193,18 @@ class Game():
         # Snake successfully eat the prey if the inner box complete inside 
         eaten = is_box_inside(prey, snake) if SNAKE_ICON_WIDTH > PREY_WIDTH else is_box_inside(snake, prey)
 
-        # If eaten, increase score
+        # If prey eaten, increase score
         if eaten:
-            print("Captured!")
             self.score += 1
-            self.createNewPrey()
-        
-        # If not eaten, score remain the same, remove the last coorrdinate (snake tail)
+        # If prey not eaten, score remain the same, remove the last coorrdinate (snake tail)
         else:
             self.snakeCoordinates.pop()
 
         # Put actions into queue
-        self.queue.put_nowait({"move": self.snakeCoordinates})
         self.queue.put_nowait({"score": self.score})
-
+        self.queue.put_nowait({"move": self.snakeCoordinates})
+        if eaten:
+            self.createNewPrey()
         # check if the game should be over 
         self.isGameOver(self.snakeCoordinates[0])
 
@@ -223,15 +219,16 @@ class Game():
         """
         headX, headY = self.snakeCoordinates[0]
 
-        if self.direction == 'Up':
+        if self.direction == 'Up': # If up add head on top
             new_head = (headX, headY-10)
-        elif self.direction == 'Down':
+        elif self.direction == 'Down': # If down add head to the bottom
             new_head = (headX, headY+10)
-        elif self.direction == 'Left':
+        elif self.direction == 'Left': # If left add head to the left
             new_head = (headX-10, headY)
-        elif self.direction == 'Right':
+        elif self.direction == 'Right': # If right add head to the right
             new_head = (headX+10, headY)
 
+        # return new head of the snake 
         return new_head 
 
 
@@ -258,6 +255,9 @@ class Game():
             away from the walls. 
         """
         THRESHOLD = 15   #sets how close prey can be to borders
+        
+        # PAN code for testing: can remove
+        self.queue.put_nowait({"prey": (400, 50, 405, 55)})
         #complete the method implementation below
 
 
