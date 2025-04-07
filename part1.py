@@ -1,5 +1,5 @@
-# Group#:
-# Student Names:
+# Group#: B27
+# Student Names: Pan Tisapramotkul, Joshan Gill
 
 """
     This program implements a variety of the snake 
@@ -117,7 +117,7 @@ class Game():
         self.gameNotOver = True
         self.createNewPrey()
 
-    def superloop(self) -> None:
+    def superloop(self) -> None: #Joshan
         """
             This method implements a main loop
             of the game. It constantly generates "move" 
@@ -127,9 +127,6 @@ class Game():
         """
         SPEED = 0.15     #speed of snake updates (sec)
         while self.gameNotOver:
-            #complete the method implementation below
-
-            # PAN: Testing Purpose
             self.move()
             time.sleep(SPEED)
 
@@ -232,7 +229,7 @@ class Game():
         return new_head 
 
 
-    def isGameOver(self, snakeCoordinates) -> None:
+    def isGameOver(self, snakeCoordinates) -> None: #Joshan
         """
             This method checks if the game is over by 
             checking if now the snake has passed any wall
@@ -240,10 +237,18 @@ class Game():
             If that is the case, it updates the gameNotOver 
             field and also adds a "game_over" task to the queue. 
         """
+        """
         x, y = snakeCoordinates
-        #complete the method implementation below
 
-    def createNewPrey(self) -> None:
+        # Check wall collision
+        if not (0 <= x < self.grid_width and 0 <= y < self.grid_height):
+            self.gameNotOver = False
+            self.queue.put({"game_over": True})
+            return
+
+            """
+
+    def createNewPrey(self) -> None: #Joshan
         """ 
             This methods picks an x and a y randomly as the coordinate 
             of the new prey and uses that to calculate the 
@@ -255,10 +260,22 @@ class Game():
             away from the walls. 
         """
         THRESHOLD = 15   #sets how close prey can be to borders
+        snake_half = SNAKE_ICON_WIDTH / 2
         
         # PAN code for testing: can remove
-        self.queue.put_nowait({"prey": (400, 50, 405, 55)})
+        #self.queue.put_nowait({"prey": (400, 50, 405, 55)})
         #complete the method implementation below
+
+        while True:
+            x = random.randint(THRESHOLD, WINDOW_WIDTH - THRESHOLD)
+            y = random.randint(THRESHOLD, WINDOW_HEIGHT - THRESHOLD)
+
+            # Ensure prey do not spawn on snake coordinates
+            if all(abs(x - sx) > SNAKE_ICON_WIDTH and abs(y - sy) > SNAKE_ICON_WIDTH for sx, sy in self.snakeCoordinates):
+                break
+
+        coords = (x - snake_half, y - snake_half, x + snake_half, y + snake_half)
+        self.queue.put({"prey": coords})
 
 
 if __name__ == "__main__":
