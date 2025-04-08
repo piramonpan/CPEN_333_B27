@@ -117,7 +117,7 @@ class Game():
         self.gameNotOver = True
         self.createNewPrey()
 
-    def superloop(self) -> None: #Joshan
+    def superloop(self) -> None: 
         """
             This method implements a main loop
             of the game. It constantly generates "move" 
@@ -167,16 +167,21 @@ class Game():
 
         # Determine bounding boxes for the snake's head and prey
         snake_half_width = SNAKE_ICON_WIDTH / 2
+
         prey_coords = gui.canvas.coords(gui.preyIcon)
 
+        # Calculate the bounding box for the prey
         prey_box = (
-            prey_coords[0], prey_coords[1], PREY_ICON_WIDTH * 2
+            prey_coords[0],
+            prey_coords[1],
+            PREY_ICON_WIDTH 
         )
-        snake_head_box = (
-            new_head[0] - snake_half_width,
-            new_head[1] - snake_half_width,
-            SNAKE_ICON_WIDTH
-        )
+
+        # Calculate the bounding box for the snake's head
+        snake_box = (
+            self.snakeCoordinates[0][0] - snake_half_width,
+            self.snakeCoordinates[0][1] - snake_half_width,
+            SNAKE_ICON_WIDTH)
 
         def is_box_inside(inner_box: tuple[float, float, float], outer_box: tuple[float, float, float]) -> bool:
             """
@@ -187,25 +192,21 @@ class Game():
             """
             x1, y1, w1 = inner_box
             x2, y2, w2 = outer_box
-            
+
+            margin = (SNAKE_ICON_WIDTH - PREY_ICON_WIDTH)/2 # to account for pixel rounding errors
+
             return (
-                x2 <= x1 and y2 <= y1 and
-                x1 + w1 <= x2 + w2 and
-                y1 + w1 <= y2 + w2
+                (x2 - x1) <= margin and 
+                (y2 - y1) <= margin and
+                (x2 + w2 - x1 + w1) >= margin and
+                (y2 + w2 - y1 + w1)  >= margin
             )
-        
-            # return (
-            #     (x2 - x1) <= -0.5 and 
-            #     (y2 - y1) <= -0.5 and
-            #     (x2 + w2 - x1 + w1) >= -0.5 and
-            #     (y2 + w2 - y1 + w1)  >= -0.5
-            # )
 
         # Determine if prey was eaten by checking box containment
-        if SNAKE_ICON_WIDTH >= (PREY_ICON_WIDTH*2):
-            prey_eaten = is_box_inside(prey_box, snake_head_box) 
+        if SNAKE_ICON_WIDTH >= (PREY_ICON_WIDTH):
+            prey_eaten = is_box_inside(prey_box, snake_box) 
         else:
-            prey_eaten = is_box_inside(snake_head_box, prey_box)
+            prey_eaten = is_box_inside(snake_box, snake_box)
 
         if prey_eaten:
             # Increase score and generate a new prey
@@ -247,8 +248,7 @@ class Game():
         # return new head of the snake 
         return new_head 
 
-
-    def isGameOver(self, snakeCoordinates) -> None: #Joshan
+    def isGameOver(self, snakeCoordinates) -> None: 
         """
             This method checks if the game is over by 
             checking if now the snake has passed any wall
@@ -258,18 +258,16 @@ class Game():
         """
         head_x, head_y = snakeCoordinates[0]
 
-        #print(f"DEBUG: head_x: {head_x}, head_y: {head_y}")
-        #print(f"DEBUG: snakeCoordinates: {snakeCoordinates}")
-
+        # Check if the snake's head is out of bounds or collides with itself
         if (
             head_x < 0 or head_x > WINDOW_WIDTH or
             head_y < 0 or head_y > WINDOW_HEIGHT or
             (head_x, head_y) in snakeCoordinates[1:]
         ):
             self.gameNotOver = False
-            self.queue.put({"game_over": True})
+            self.queue.put({"game_over": True}) # Add game over task to the queue
 
-    def createNewPrey(self) -> None: #Joshan
+    def createNewPrey(self) -> None: 
         """ 
             This methods picks an x and a y randomly as the coordinate 
             of the new prey and uses that to calculate the 
@@ -281,7 +279,9 @@ class Game():
             away from the walls. 
         """
         THRESHOLD = 15   #sets how close prey can be to borders
+        Prey_half_width = PREY_ICON_WIDTH / 2  
 
+        # Generate random coordinates for prey within the window
         while True:
             x = random.randint(THRESHOLD, WINDOW_WIDTH - THRESHOLD)
             y = random.randint(THRESHOLD, WINDOW_HEIGHT - THRESHOLD)
@@ -289,17 +289,18 @@ class Game():
             # Ensure prey do not spawn on snake coordinates
             if all(abs(x - sx) > SNAKE_ICON_WIDTH and abs(y - sy) > SNAKE_ICON_WIDTH for sx, sy in self.snakeCoordinates):
                 break
-
-        coords = (x - PREY_ICON_WIDTH, y - PREY_ICON_WIDTH, x + PREY_ICON_WIDTH, y + PREY_ICON_WIDTH)
-        self.queue.put({"prey": coords})
         
+        # Calculate the rectangle coordinates for the prey
+        coords = (x - Prey_half_width, y - Prey_half_width, x + Prey_half_width, y + Prey_half_width)
+        self.queue.put({"prey": coords})
+
 
 if __name__ == "__main__":
     #some constants for our GUI
     WINDOW_WIDTH = 500           
     WINDOW_HEIGHT = 300 
     SNAKE_ICON_WIDTH = 15
-    PREY_ICON_WIDTH = 5 # constant PREY_ICON_WIDTH     
+    PREY_ICON_WIDTH = 10 # constant PREY_ICON_WIDTH     
 
     BACKGROUND_COLOUR = "green"   #you may change this colour if you wish
     ICON_COLOUR = "yellow"        #you may change this colour if you wish
