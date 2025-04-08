@@ -110,8 +110,8 @@ class Game():
         #starting length and location of the snake
         #note that it is a list of tuples, each being an
         # (x, y) tuple. Initially its size is 5 tuples.       
-        self.snakeCoordinates = [(495, 55), (485, 55), (475, 55),
-                                 (465, 55), (455, 55)]
+        self.snakeCoordinates = [(455, 55), (465, 55), (475, 55),
+                                 (485, 55), (495, 55)]
         #initial direction of the snake
         self.direction = "Left"
         self.gameNotOver = True
@@ -204,9 +204,7 @@ class Game():
             self.createNewPrey()
 
         # check if the game should be over 
-        if self.isGameOver(self.snakeCoordinates):
-            self.gameNotOver = False
-            self.queue.put_nowait({"game_over": True})
+        self.isGameOver(self.snakeCoordinates)
 
     def calculateNewCoordinates(self) -> tuple: 
         """
@@ -241,31 +239,17 @@ class Game():
             field and also adds a "game_over" task to the queue. 
         """
         head_x, head_y = snakeCoordinates[0]
-        collision = False
 
-        print(f"DEBUG: head_x: {head_x}, head_y: {head_y}")
-        print(f"DEBUG: snakeCoordinates: {snakeCoordinates}")
-        
-        # 1. Wall collision
-        """if (
-            head_x < 0 or head_x >= WINDOW_WIDTH or
-            head_y < 0 or head_y >= WINDOW_HEIGHT and
-            collision == True
+        #print(f"DEBUG: head_x: {head_x}, head_y: {head_y}")
+        #print(f"DEBUG: snakeCoordinates: {snakeCoordinates}")
+
+        if (
+            head_x < 0 or head_x > WINDOW_WIDTH or
+            head_y < 0 or head_y > WINDOW_HEIGHT or
+            (head_x, head_y) in snakeCoordinates[1:]
         ):
-            return True
-            """
-
-        # 2. Self collision: if head is in any other part of the body
-        #if (head_x, head_y) in self.snakeCoordinates[1:]:
-         #   return True
-        
-        if (head_x <= WINDOW_WIDTH and collision == False):
-            collision = True
-
-
-        # Game continues
-        return False
-        
+            self.gameNotOver = False
+            self.queue.put({"game_over": True})
 
     def createNewPrey(self) -> None: #Joshan
         """ 
@@ -290,7 +274,7 @@ class Game():
 
         coords = (x - PREY_ICON_WIDTH, y - PREY_ICON_WIDTH, x + PREY_ICON_WIDTH, y + PREY_ICON_WIDTH)
         self.queue.put({"prey": coords})
-
+        
 
 if __name__ == "__main__":
     #some constants for our GUI
