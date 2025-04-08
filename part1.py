@@ -160,48 +160,65 @@ class Game():
             The snake coordinates list (representing its length 
             and position) should be correctly updated.
         """
-        # generate new snake coordinate
-        NewSnakeCoordinates = self.calculateNewCoordinates()
-        # put the coordinate in front of the snake 
-        self.snakeCoordinates.insert(0, NewSnakeCoordinates)
+        # Calculate new head position based on current direction
+        new_head = self.calculateNewCoordinates()
+        # Insert the new head position at the front of the snake's body
+        self.snakeCoordinates.insert(0, new_head)
 
-        # If based on this new movement, the prey has been captured, 
-        # it adds a task to the queue for the update score 
-        # and also creates a new prey
-        snake_half = SNAKE_ICON_WIDTH / 2
+        # Determine bounding boxes for the snake's head and prey
+        snake_half_width = SNAKE_ICON_WIDTH / 2
+        prey_coords = gui.canvas.coords(gui.preyIcon)
 
-        prey_coordinates = gui.canvas.coords(gui.preyIcon)
-        prey = (prey_coordinates[0], prey_coordinates[1], PREY_ICON_WIDTH)
-        snake = (self.snakeCoordinates[0][0] - snake_half, self.snakeCoordinates[0][1] - snake_half, SNAKE_ICON_WIDTH)
+        prey_box = (
+            prey_coords[0], prey_coords[1], PREY_ICON_WIDTH * 2
+        )
+        snake_head_box = (
+            new_head[0] - snake_half_width,
+            new_head[1] - snake_half_width,
+            SNAKE_ICON_WIDTH
+        )
 
-        def is_box_inside(inner : tuple, outer : tuple) -> bool:
-            '''
-            Check if the inner box is completely inside another box or not.
-            If the prey has smaller width than snake, the prey is the inner box
-            Else if the prey has large width than snake, the snake head is the inner box
-            '''
+        def is_box_inside(inner_box: tuple[float, float, float], outer_box: tuple[float, float, float]) -> bool:
+            """
+            Checks whether 'inner' box is completely within 'outer' box.
 
-            x1, y1, w1 = inner
-            x2, y2, w2 = outer
-
-            return x2 <= x1 and y2 <= y1 and x1 + w1 <= x2 + w2 and y1 + w1 <= y2 + w2
+            Each box is represented as (x, y, width).
+            The check is inclusive of boundaries.
+            """
+            x1, y1, w1 = inner_box
+            x2, y2, w2 = outer_box
+            
+            return (
+                x2 <= x1 and y2 <= y1 and
+                x1 + w1 <= x2 + w2 and
+                y1 + w1 <= y2 + w2
+            )
         
-        # Snake successfully eat the prey if the inner box complete inside 
-        eaten = is_box_inside(prey, snake) if SNAKE_ICON_WIDTH > PREY_ICON_WIDTH else is_box_inside(snake, prey)
+            # return (
+            #     (x2 - x1) <= -0.5 and 
+            #     (y2 - y1) <= -0.5 and
+            #     (x2 + w2 - x1 + w1) >= -0.5 and
+            #     (y2 + w2 - y1 + w1)  >= -0.5
+            # )
 
-        # If prey eaten, increase score
-        if eaten:
-            self.score += 1
-        # If prey not eaten, score remain the same, remove the last coorrdinate (snake tail)
+        # Determine if prey was eaten by checking box containment
+        if SNAKE_ICON_WIDTH >= (PREY_ICON_WIDTH*2):
+            prey_eaten = is_box_inside(prey_box, snake_head_box) 
         else:
+            prey_eaten = is_box_inside(snake_head_box, prey_box)
+
+        if prey_eaten:
+            # Increase score and generate a new prey
+            # Do not have to remove tail because we need to simulate snake growing 
+            self.score += 1
+            self.createNewPrey()
+        else:
+            # If no prey was eaten, remove tail to simulate movement
             self.snakeCoordinates.pop()
 
-        # Put actions into queue
+        # Send updated score and movement to the queue
         self.queue.put_nowait({"score": self.score})
         self.queue.put_nowait({"move": self.snakeCoordinates})
-       
-        if eaten:
-            self.createNewPrey()
 
         # check if the game should be over 
         self.isGameOver(self.snakeCoordinates)
@@ -215,6 +232,7 @@ class Game():
             head of the snake.
             It is used by the move() method.    
         """
+        # Get the head coordinates of the snake
         headX, headY = self.snakeCoordinates[0]
 
         if self.direction == 'Up': # If up add head on top
