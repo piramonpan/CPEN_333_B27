@@ -1,56 +1,76 @@
-# Group #:
-# Student names:
+# Group #:B27
+# Student names: Piramon Tisapramotkul and Joshan Gill 
 
 import threading
 import queue
 import time, random
 
 def consumerWorker (queue : queue.Queue):
-    """target worker for a consumer thread"""
-    def waitForItemToBeConsumed() -> None: #inner function; use as is
-        time.sleep(round(random.uniform(.1, .3), 2)) #a random delay (100 to 300
 
-    for _ in range(SIZE * 2): #we just consume twice the buffer size for testing
-        #write the code below to correctly remove an item from the circular buffer
-        waitForItemToBeConsumed() #wait for the item to be consumed
-        item = queue.get()
-        print(f"DEBUG: {item} consumed")
-        
+    """
+    target worker for a consumer thread
+    Consume a fixed number of item and remove them from the buffer
+    """
+
+    def waitForItemToBeConsumed() -> None: #inner function; use as is
+        time.sleep(round(random.uniform(DELAY_RANGE_MIN, DELAY_RANGE_MAX), 2)) #a random delay (100 to 300ms)
+    
+    while True:
+        waitForItemToBeConsumed() # Delay simulating item being consumed
+        item = buffer.get()  
+        print(f"{threading.current_thread().name}: {item} consumed")
+        buffer.task_done()
+
 def producerWorker(queue : queue.Queue):
-    """target worker for a producer thread"""
+    """
+    target worker for a producer thread
+    Produces a fixed number of items and add them to the buffer
+    """
 
     def waitForItemToBeProduced() -> int: #inner function; use as is
-        time.sleep(round(random.uniform(.1, .3), 2)) #a random delay (100 to 300ms)
+        time.sleep(round(random.uniform(DELAY_RANGE_MIN, DELAY_RANGE_MAX), 2)) #a random delay (100 to 300ms)
         return random.randint(1, 50) #an item is produced
     
-    for _ in range(SIZE * 2):
+    for _ in range(ITEMS_PER_THREAD):
         item = waitForItemToBeProduced()
-        print(f"DEBUG: {item} produced" )
-        queue.put(item=item)
-        print(list(queue.queue))
-
+        print(f"{threading.current_thread().name}: {item} produced")
+        queue.put(item)
 
 if __name__ == "__main__":
-    SIZE = 5
-    THREADS = 5
+    NUM_PRODUCERS = 5
+    NUM_CONSUMERS = 25
+    ITEMS_PER_THREAD = 10
+    DELAY_RANGE_MIN = 0.1 # Seconds
+    DELAY_RANGE_MAX = 0.3  # Seconds
 
+    # Initialize buffer using queue module - No maximum buffer size 
     buffer = queue.Queue()
 
-    # Creating producer and consumer threads 
+    # Creating lists to store producer and consumer threads 
     producer_threads : list[threading.Thread] = []
     consumer_threads : list[threading.Thread] = []
 
-    for _ in range(4):
-        producer_threads.append(threading.Thread(target=producerWorker, args=(buffer,)))
-    for _ in range(5):
-        consumer_threads.append(threading.Thread(target=consumerWorker, args=(buffer,), daemon=True))
+    # Create producere threads
+    for i in range(NUM_PRODUCERS):
+        producer_threads.append(threading.Thread(target=producerWorker, args=(buffer,), name=f"Producer-{i+1}"))
+    
+    # Create consumer threads as daemons
+    for j in range(NUM_CONSUMERS):
+        consumer_threads.append(threading.Thread(target=consumerWorker, args=(buffer,), daemon=False, name=f"Consumer-{j+1}"))
 
+    # Start producer threads
     for i in producer_threads:
         i.start()
+
+    # Start consumer threads
     for j in consumer_threads:
         j.start()
-        
+    
+    # Wait for all producer threads to finish
     for i in producer_threads:
         i.join()
 
-    print("All items produced and consumed succesfully")
+    # Wait until all produced items have been processed
+        buffer.join()
+
+    print("All items produced and consumed succesfully!")
