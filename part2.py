@@ -1,4 +1,4 @@
-# Group #:B27
+# Group #: B27
 # Student names: Piramon Tisapramotkul and Joshan Gill 
 
 import threading
@@ -37,8 +37,8 @@ def producerWorker(queue : queue.Queue):
         queue.put(item)
 
 if __name__ == "__main__":
-    NUM_PRODUCERS = 5
-    NUM_CONSUMERS = 25
+    NUM_PRODUCERS = 4
+    NUM_CONSUMERS = 5
     ITEMS_PER_THREAD = 10
     DELAY_RANGE_MIN = 0.1 # Seconds
     DELAY_RANGE_MAX = 0.3  # Seconds
