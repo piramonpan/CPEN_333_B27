@@ -168,11 +168,10 @@ class Game():
         # If based on this new movement, the prey has been captured, 
         # it adds a task to the queue for the update score 
         # and also creates a new prey
-        PREY_WIDTH = 5
         snake_half = SNAKE_ICON_WIDTH / 2
 
         prey_coordinates = gui.canvas.coords(gui.preyIcon)
-        prey = (prey_coordinates[0], prey_coordinates[1], PREY_WIDTH)
+        prey = (prey_coordinates[0], prey_coordinates[1], PREY_ICON_WIDTH)
         snake = (self.snakeCoordinates[0][0] - snake_half, self.snakeCoordinates[0][1] - snake_half, SNAKE_ICON_WIDTH)
 
         def is_box_inside(inner : tuple, outer : tuple) -> bool:
@@ -188,7 +187,7 @@ class Game():
             return x2 <= x1 and y2 <= y1 and x1 + w1 <= x2 + w2 and y1 + w1 <= y2 + w2
         
         # Snake successfully eat the prey if the inner box complete inside 
-        eaten = is_box_inside(prey, snake) if SNAKE_ICON_WIDTH > PREY_WIDTH else is_box_inside(snake, prey)
+        eaten = is_box_inside(prey, snake) if SNAKE_ICON_WIDTH > PREY_ICON_WIDTH else is_box_inside(snake, prey)
 
         # If prey eaten, increase score
         if eaten:
@@ -200,10 +199,14 @@ class Game():
         # Put actions into queue
         self.queue.put_nowait({"score": self.score})
         self.queue.put_nowait({"move": self.snakeCoordinates})
+       
         if eaten:
             self.createNewPrey()
+
         # check if the game should be over 
-        self.isGameOver(self.snakeCoordinates[0])
+        if self.isGameOver(self.snakeCoordinates):
+            self.gameNotOver = False
+            self.queue.put_nowait({"game_over": True})
 
     def calculateNewCoordinates(self) -> tuple: 
         """
@@ -237,16 +240,32 @@ class Game():
             If that is the case, it updates the gameNotOver 
             field and also adds a "game_over" task to the queue. 
         """
-        """
-        x, y = snakeCoordinates
+        head_x, head_y = snakeCoordinates[0]
+        collision = False
 
-        # Check wall collision
-        if not (0 <= x < self.grid_width and 0 <= y < self.grid_height):
-            self.gameNotOver = False
-            self.queue.put({"game_over": True})
-            return
-
+        print(f"DEBUG: head_x: {head_x}, head_y: {head_y}")
+        print(f"DEBUG: snakeCoordinates: {snakeCoordinates}")
+        
+        # 1. Wall collision
+        """if (
+            head_x < 0 or head_x >= WINDOW_WIDTH or
+            head_y < 0 or head_y >= WINDOW_HEIGHT and
+            collision == True
+        ):
+            return True
             """
+
+        # 2. Self collision: if head is in any other part of the body
+        #if (head_x, head_y) in self.snakeCoordinates[1:]:
+         #   return True
+        
+        if (head_x <= WINDOW_WIDTH and collision == False):
+            collision = True
+
+
+        # Game continues
+        return False
+        
 
     def createNewPrey(self) -> None: #Joshan
         """ 
@@ -260,11 +279,6 @@ class Game():
             away from the walls. 
         """
         THRESHOLD = 15   #sets how close prey can be to borders
-        snake_half = SNAKE_ICON_WIDTH / 2
-        
-        # PAN code for testing: can remove
-        #self.queue.put_nowait({"prey": (400, 50, 405, 55)})
-        #complete the method implementation below
 
         while True:
             x = random.randint(THRESHOLD, WINDOW_WIDTH - THRESHOLD)
@@ -274,7 +288,7 @@ class Game():
             if all(abs(x - sx) > SNAKE_ICON_WIDTH and abs(y - sy) > SNAKE_ICON_WIDTH for sx, sy in self.snakeCoordinates):
                 break
 
-        coords = (x - snake_half, y - snake_half, x + snake_half, y + snake_half)
+        coords = (x - PREY_ICON_WIDTH, y - PREY_ICON_WIDTH, x + PREY_ICON_WIDTH, y + PREY_ICON_WIDTH)
         self.queue.put({"prey": coords})
 
 
@@ -283,7 +297,7 @@ if __name__ == "__main__":
     WINDOW_WIDTH = 500           
     WINDOW_HEIGHT = 300 
     SNAKE_ICON_WIDTH = 15
-    #add the specified constant PREY_ICON_WIDTH here     
+    PREY_ICON_WIDTH = 5 # constant PREY_ICON_WIDTH     
 
     BACKGROUND_COLOUR = "green"   #you may change this colour if you wish
     ICON_COLOUR = "yellow"        #you may change this colour if you wish
